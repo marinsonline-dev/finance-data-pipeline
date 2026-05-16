@@ -1,0 +1,26 @@
+# Credenciais — NUNCA versionar
+.env
+*.pem
+*.key
+
+# Dados locais
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

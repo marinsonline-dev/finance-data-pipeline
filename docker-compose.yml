@@ -1,0 +1,67 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: finance_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: finance_dw
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/01_create_tables.sql
+      - ./sql/indexes.sql:/docker-entrypoint-initdb.d/02_indexes.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 30s
+      retries: 20
+      start_period: 60s
+    networks:
+      - finance_net
+
+  pipeline:
+    build: .
+    container_name: finance_pipeline
+    env_file: .env
+    environment:
+      RDS_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    command: >
+      python src/run_pipeline.py
+      --ativos AAPL GOOGL MSFT AMZN META
+      --pular-s3
+    networks:
+      - finance_net
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: finance_metabase
+    ports:
+      - "3000:3000"
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: postgres
+      MB_DB_PORT: 5432
+      MB_DB_USER: postgres
+      MB_DB_PASS: postgres
+      MB_DB_DBNAME: finance_dw
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - finance_net
+
+networks:
+  finance_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
