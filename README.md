@@ -12,6 +12,34 @@ Este projeto simula um ambiente corporativo real de **Engenharia de Dados** para
 
 Os dados são visualizados em um **dashboard interativo** via Metabase, acessível pelo navegador.
 
+### ⚙️ Este projeto demonstra não apenas a implementação de uma pipeline ETL, mas também a importância de:
+
+Monitoramento de integridade de dados
+Diferença entre sucesso técnico e sucesso de processamento
+Análise crítica de falhas silenciosas
+Validação de dados antes da carga final
+Em Engenharia de Dados, uma execução sem erro não garante que o dado foi entregue corretamente.
+Por isso, foram adicionadas verificações explícitas para evitar resultados inconsistentes ou vazios.
+
+### 🔧 Correções aplicadas no pipeline
+
+Problema identificado:
+O método yf.Ticker().history() do yfinance passou a retornar erros de autenticação (possibly delisted) para todos os ativos simultaneamente, impedindo a extração de dados reais da Yahoo Finance API.
+Causa raiz:
+O yfinance atualizou sua autenticação interna e o método Ticker().history() ficou instável em ambientes containerizados (Docker) e em algumas versões do Python, retornando respostas vazias mesmo para ativos válidos como AAPL, GOOGL e MSFT.
+Solução aplicada:
+Substituição do método de extração por yf.download(), que utiliza um endpoint diferente e mais estável da Yahoo Finance API, com melhor compatibilidade entre versões.
+Ajustes técnicos realizados:
+
+Migração de yf.Ticker().history() para yf.download()
+Tratamento de colunas MultiIndex geradas pelo yf.download()
+Ajuste do intervalo de datas para incluir corretamente a data final
+Execução do pipeline fora do Docker para garantir acesso à internet
+Validação com dados reais: 5/5 ativos extraídos com sucesso
+
+Resultado:
+Pipeline rodando corretamente com dados reais de mercado, extraindo cotações diárias de AAPL, GOOGL, MSFT, AMZN e META com todas as etapas ETL funcionando — Extract ✅ Transform ✅ Load ✅
+
 ---
 
 ## 🏗️ Arquitetura
