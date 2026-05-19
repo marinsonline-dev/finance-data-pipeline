@@ -1,7 +1,7 @@
 """
 extract.py
 Extração de dados financeiros via yfinance (Yahoo Finance).
-Suporte a múltiplos ativos com atualização incremental diária.
+Usa yf.download para maior compatibilidade e confiabilidade.
 """
 
 import yfinance as yf
@@ -25,37 +25,36 @@ DIRETORIO_RAW = Path("data/raw")
 def extrair_cotacoes(simbolos=None, data_inicio=None, data_fim=None):
     """
     Extrai cotações históricas para uma lista de símbolos.
-
-    Args:
-        simbolos: Lista de tickers (ex: ["AAPL", "MSFT"])
-        data_inicio: Data inicial YYYY-MM-DD (padrão: ontem)
-        data_fim: Data final YYYY-MM-DD (padrão: hoje)
-
-    Returns:
-        Dicionário {simbolo: DataFrame com cotações brutas}
+    Usa yf.download para maior compatibilidade.
     """
     if simbolos is None:
         simbolos = ATIVOS_PADRAO
 
     hoje = datetime.today()
-    data_fim = data_fim or hoje.strftime("%Y-%m-%d")
+    # Adiciona 1 dia ao fim para incluir a data final
+    data_fim_dt = datetime.strptime(data_fim, "%Y-%m-%d") + timedelta(days=1) if data_fim else hoje + timedelta(days=1)
+    data_fim_str = data_fim_dt.strftime("%Y-%m-%d")
     data_inicio = data_inicio or (hoje - timedelta(days=1)).strftime("%Y-%m-%d")
 
-    logger.info(f"Extração | Ativos: {simbolos} | Período: {data_inicio} → {data_fim}")
+    logger.info(f"Extração | Ativos: {simbolos} | Período: {data_inicio} → {data_fim or hoje.strftime('%Y-%m-%d')}")
 
     resultados = {}
 
     for simbolo in simbolos:
         try:
             logger.info(f"Baixando {simbolo}...")
-            ticker = yf.Ticker(simbolo)
-            df = ticker.history(start=data_inicio, end=data_fim)
+            df = yf.download(simbolo, start=data_inicio, end=data_fim_str, progress=False)
 
             if df.empty:
                 logger.warning(f"Sem dados para {simbolo} no período.")
                 continue
 
+            # Flatten colunas multi-level se necessário
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+
             df = df.reset_index()
+            df.columns = [str(c) for c in df.columns]
             df["simbolo"] = simbolo
             df["extraido_em"] = datetime.utcnow().isoformat()
 
@@ -71,7 +70,7 @@ def extrair_cotacoes(simbolos=None, data_inicio=None, data_fim=None):
 
 def salvar_raw_local(dados, data_referencia=None):
     """
-    Salva dados brutos em JSON particionado por data (espelha estrutura S3).
+    Salva dados brutos em JSON particionado por data.
     Estrutura: data/raw/ano=YYYY/mes=MM/dia=DD/<SIMBOLO>.json
     """
     data_ref = data_referencia or datetime.today().strftime("%Y-%m-%d")
