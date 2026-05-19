@@ -2,7 +2,8 @@
 
 > Pipeline de dados financeiros end-to-end com arquitetura moderna baseada em AWS, PostgreSQL e Python — projeto de portfólio profissional de Engenharia de Dados.
 
-![Pipeline Rodando](docs/pipeline_ok.png)
+![Pipeline Rodando](docs/pepiline_ok.png)
+![Pipeline Com Sucesso](docs/pipeline_comsucesso.png)
 
 ---
 
